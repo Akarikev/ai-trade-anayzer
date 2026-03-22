@@ -17,7 +17,10 @@ import {
   Lock,
   Settings,
   History,
-  Info
+  Info,
+  AlertTriangle,
+  X,
+  ArrowRight
 } from 'lucide-react';
 import { 
   XAxis, 
@@ -48,16 +51,28 @@ interface Market {
   id: string;
   name: string;
   symbol: string; // For WebSocket
-  basePrice: number;
+  fallbackPrice: number;
   type: 'CRYPTO' | 'FOREX_OTC';
 }
 
 const MARKETS: Market[] = [
-  { id: 'BTCUSD', name: 'Bitcoin / USD', symbol: 'btcusdt', basePrice: 64000, type: 'CRYPTO' },
-  { id: 'ETHUSD', name: 'Ethereum / USD', symbol: 'ethusdt', basePrice: 3500, type: 'CRYPTO' },
-  { id: 'EURUSD_OTC', name: 'EUR/USD OTC', symbol: 'eurusd', basePrice: 1.0845, type: 'FOREX_OTC' },
-  { id: 'GBPUSD_OTC', name: 'GBP/USD OTC', symbol: 'gbpusd', basePrice: 1.2632, type: 'FOREX_OTC' },
-  { id: 'USDJPY_OTC', name: 'USD/JPY OTC', symbol: 'usdjpy', basePrice: 151.42, type: 'FOREX_OTC' },
+  // Crypto
+  { id: 'BTCUSD', name: 'Bitcoin / USD', symbol: 'btcusdt', fallbackPrice: 64000, type: 'CRYPTO' },
+  { id: 'ETHUSD', name: 'Ethereum / USD', symbol: 'ethusdt', fallbackPrice: 3500, type: 'CRYPTO' },
+  { id: 'SOLUSD', name: 'Solana / USD', symbol: 'solusdt', fallbackPrice: 150, type: 'CRYPTO' },
+  { id: 'BNBUSD', name: 'Binance Coin / USD', symbol: 'bnbusdt', fallbackPrice: 600, type: 'CRYPTO' },
+  { id: 'XRPUSD', name: 'Ripple / USD', symbol: 'xrpusdt', fallbackPrice: 0.6, type: 'CRYPTO' },
+  { id: 'ADAUSD', name: 'Cardano / USD', symbol: 'adausdt', fallbackPrice: 0.5, type: 'CRYPTO' },
+  { id: 'DOGEUSD', name: 'Dogecoin / USD', symbol: 'dogeusdt', fallbackPrice: 0.15, type: 'CRYPTO' },
+  
+  // Forex OTC
+  { id: 'EURUSD_OTC', name: 'EUR/USD OTC', symbol: 'eurusd', fallbackPrice: 1.0845, type: 'FOREX_OTC' },
+  { id: 'GBPUSD_OTC', name: 'GBP/USD OTC', symbol: 'gbpusd', fallbackPrice: 1.2632, type: 'FOREX_OTC' },
+  { id: 'AUDUSD_OTC', name: 'AUD/USD OTC', symbol: 'audusd', fallbackPrice: 0.65, type: 'FOREX_OTC' },
+  { id: 'NZDUSD_OTC', name: 'NZD/USD OTC', symbol: 'nzdusd', fallbackPrice: 0.60, type: 'FOREX_OTC' },
+  { id: 'USDJPY_OTC', name: 'USD/JPY OTC', symbol: 'usdjpy', fallbackPrice: 151.42, type: 'FOREX_OTC' },
+  { id: 'USDCAD_OTC', name: 'USD/CAD OTC', symbol: 'usdcad', fallbackPrice: 1.35, type: 'FOREX_OTC' },
+  { id: 'USDCHF_OTC', name: 'USD/CHF OTC', symbol: 'usdchf', fallbackPrice: 0.90, type: 'FOREX_OTC' },
 ];
 
 const TIMEFRAMES = [
@@ -71,6 +86,56 @@ const TIMEFRAMES = [
   { id: 'CUSTOM', label: 'Custom', value: 'Custom' },
 ];
 
+const TRADING_TERMS: Record<string, string> = {
+  'bearish': 'A market trend where prices are falling or expected to fall.',
+  'bullish': 'A market trend where prices are rising or expected to rise.',
+  'entry': 'The specific price at which you should open your trade.',
+  'take profit': 'The target price to close the trade and secure your gains.',
+  'stop loss': 'The price level to close the trade to prevent further losses.',
+  'duration': 'The expected time frame for this trade to play out.',
+  'volatility': 'The rate at which the price of an asset increases or decreases.',
+  'support': 'A price level where a downtrend tends to pause due to demand.',
+  'resistance': 'A price level where an uptrend tends to pause due to supply.',
+  'overbought': 'An asset that has traded higher in price and is likely to reverse.',
+  'oversold': 'An asset that has traded lower in price and is likely to bounce.',
+  'trend': 'The general direction of a market or of the price of an asset.',
+  'consolidation': 'A period where prices trade within a limited range.',
+  'breakout': 'When the price moves above a resistance or below a support level.',
+};
+
+const TermTooltip: React.FC<{ children: React.ReactNode, content: string }> = ({ children, content }) => {
+  return (
+    <span className="relative group/tooltip inline-block">
+      {children}
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-[#1A1A1A] text-white text-[11px] leading-relaxed rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 pointer-events-none shadow-2xl border border-white/10 text-center font-medium normal-case tracking-normal block">
+        {content}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-[#1A1A1A] block" />
+      </span>
+    </span>
+  );
+};
+
+const renderWithTooltips = (text: string) => {
+  if (!text) return text;
+  const terms = Object.keys(TRADING_TERMS).sort((a, b) => b.length - a.length);
+  const regex = new RegExp(`\\b(${terms.join('|')})\\b`, 'gi');
+  const parts = text.split(regex);
+  
+  return parts.map((part, i) => {
+    const lowerPart = part.toLowerCase();
+    if (TRADING_TERMS[lowerPart]) {
+      return (
+        <TermTooltip key={i} content={TRADING_TERMS[lowerPart]}>
+          <span className="border-b border-dashed border-emerald-500/50 text-emerald-400 cursor-help">
+            {part}
+          </span>
+        </TermTooltip>
+      );
+    }
+    return part;
+  });
+};
+
 export default function Dashboard() {
   const [selectedMarket, setSelectedMarket] = useState<Market>(MARKETS[0]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,9 +145,28 @@ export default function Dashboard() {
   const [analysis, setAnalysis] = useState<SignalAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [history, setHistory] = useState<(SignalAnalysis & { timestamp: Date, market: string, timeframe: string })[]>([]);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'markets' | 'signals' | 'history'>('dashboard');
+  const [history, setHistory] = useState<(SignalAnalysis & { timestamp: Date, market: string, timeframe: string })[]>(() => {
+    const saved = localStorage.getItem('pocketSignalHistory');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((item: any) => ({ ...item, timestamp: new Date(item.timestamp) }));
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
   
   const ws = useRef<WebSocket | null>(null);
+
+  // Save history to local storage
+  useEffect(() => {
+    localStorage.setItem('pocketSignalHistory', JSON.stringify(history));
+  }, [history]);
 
   // Filtered markets based on search
   const filteredMarkets = useMemo(() => {
@@ -94,16 +178,68 @@ export default function Dashboard() {
 
   // Initialize data
   useEffect(() => {
-    const initialData: MarketDataPoint[] = [];
-    let currentPrice = selectedMarket.basePrice;
-    for (let i = 0; i < 30; i++) {
-      currentPrice += (Math.random() - 0.5) * (selectedMarket.type === 'CRYPTO' ? 10 : 0.001);
+    let isMounted = true;
+
+    const fetchInitialData = async () => {
+      let currentPrice = selectedMarket.fallbackPrice;
+      
+      try {
+        if (selectedMarket.type === 'CRYPTO') {
+          const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedMarket.symbol.toUpperCase()}`);
+          const data = await res.json();
+          if (data.price) currentPrice = parseFloat(data.price);
+        } else if (selectedMarket.type === 'FOREX_OTC') {
+          const res = await fetch(`https://api.frankfurter.app/latest?from=USD`);
+          const data = await res.json();
+          if (data.rates) {
+            if (selectedMarket.id === 'EURUSD_OTC') currentPrice = 1 / data.rates.EUR;
+            if (selectedMarket.id === 'GBPUSD_OTC') currentPrice = 1 / data.rates.GBP;
+            if (selectedMarket.id === 'AUDUSD_OTC') currentPrice = 1 / data.rates.AUD;
+            if (selectedMarket.id === 'NZDUSD_OTC') currentPrice = 1 / data.rates.NZD;
+            if (selectedMarket.id === 'USDJPY_OTC') currentPrice = data.rates.JPY;
+            if (selectedMarket.id === 'USDCAD_OTC') currentPrice = data.rates.CAD;
+            if (selectedMarket.id === 'USDCHF_OTC') currentPrice = data.rates.CHF;
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch real price, using fallback:", error);
+      }
+
+      if (!isMounted) return;
+
+      const initialData: MarketDataPoint[] = [];
+      const volatility = selectedMarket.id.includes('JPY') ? 0.05 : 
+                         selectedMarket.type === 'CRYPTO' ? currentPrice * 0.0005 : 0.00005;
+      
+      // Walk backwards to find a plausible start price
+      let startPrice = currentPrice;
+      for (let i = 0; i < 30; i++) {
+        startPrice -= (Math.random() - 0.5) * volatility;
+      }
+      
+      let walkPrice = startPrice;
+      for (let i = 0; i < 30; i++) {
+        walkPrice += (Math.random() - 0.5) * volatility;
+        initialData.push({
+          time: new Date(Date.now() - (30 - i) * 2000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          price: parseFloat(walkPrice.toFixed(selectedMarket.type === 'CRYPTO' ? 2 : 5))
+        });
+      }
+      
+      // Ensure the very last point is the exact real price
       initialData.push({
-        time: new Date(Date.now() - (30 - i) * 2000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         price: parseFloat(currentPrice.toFixed(selectedMarket.type === 'CRYPTO' ? 2 : 5))
       });
-    }
-    setMarketData(initialData);
+
+      setMarketData(initialData);
+    };
+
+    fetchInitialData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedMarket]);
 
   // WebSocket Connection
@@ -220,13 +356,113 @@ export default function Dashboard() {
     }
   };
 
-  const currentPrice = marketData.length > 0 ? marketData[marketData.length - 1].price : selectedMarket.basePrice;
-  const startPrice = marketData.length > 0 ? marketData[0].price : selectedMarket.basePrice;
+  const currentPrice = marketData.length > 0 ? marketData[marketData.length - 1].price : selectedMarket.fallbackPrice;
+  const startPrice = marketData.length > 0 ? marketData[0].price : selectedMarket.fallbackPrice;
   const priceChange = currentPrice - startPrice;
   const priceChangePercent = ((priceChange / startPrice) * 100).toFixed(2);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans selection:bg-emerald-500/30">
+      {/* Disclaimer Modal */}
+      <AnimatePresence>
+        {showDisclaimer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-[#111] border border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-rose-500" />
+              <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 mb-6">
+                <AlertTriangle size={32} />
+              </div>
+              <h2 className="text-2xl font-black tracking-tighter mb-4 text-white">Important Disclaimer</h2>
+              <p className="text-neutral-400 text-sm leading-relaxed mb-8 font-medium">
+                The signals and analysis provided by PocketSignal AI Core are <strong className="text-white">predictions based on historical data and AI models</strong>. They are not guaranteed to be accurate and do not constitute financial advice. 
+                <br/><br/>
+                Always conduct your own analysis or consult a certified trading expert before making any financial decisions. Trading involves significant risk of loss.
+              </p>
+              <button 
+                onClick={() => setShowDisclaimer(false)}
+                className="w-full py-4 bg-white text-black rounded-xl font-black uppercase tracking-widest text-xs hover:bg-neutral-200 transition-colors active:scale-95"
+              >
+                I Understand & Agree
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-[#111] border border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white">
+                    <Settings size={20} />
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tighter text-white">Settings</h2>
+                </div>
+                <button 
+                  onClick={() => setShowSettings(false)} 
+                  className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors text-neutral-400 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                {/* Default Timeframe */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Default Timeframe</h3>
+                  <select
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white font-bold focus:outline-none focus:border-emerald-500/50 appearance-none cursor-pointer"
+                    value={selectedTimeframe.id}
+                    onChange={(e) => {
+                      const tf = TIMEFRAMES.find(t => t.id === e.target.value);
+                      if (tf) setSelectedTimeframe(tf);
+                    }}
+                  >
+                    {TIMEFRAMES.map(tf => (
+                      <option key={tf.id} value={tf.id} className="bg-[#111] text-white">
+                        {tf.label} - {tf.value}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Data Management */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Data Management</h3>
+                  <button
+                    onClick={() => {
+                      setHistory([]);
+                      localStorage.removeItem('pocketSignalHistory');
+                      setShowSettings(false);
+                    }}
+                    className="w-full py-4 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-500/20 transition-colors active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <AlertTriangle size={16} />
+                    Clear Signal History
+                  </button>
+                  <p className="text-[10px] text-neutral-500 text-center font-medium">
+                    This will permanently delete your saved signals from this device.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full" />
@@ -252,10 +488,10 @@ export default function Dashboard() {
             </div>
 
             <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-neutral-500">
-              <button className="text-white hover:text-white transition-colors">Dashboard</button>
-              <button className="hover:text-white transition-colors">Markets</button>
-              <button className="hover:text-white transition-colors">Signals</button>
-              <button className="hover:text-white transition-colors">History</button>
+              <button onClick={() => setCurrentView('dashboard')} className={cn("transition-colors", currentView === 'dashboard' ? "text-white" : "hover:text-white")}>Dashboard</button>
+              <button onClick={() => setCurrentView('markets')} className={cn("transition-colors", currentView === 'markets' ? "text-white" : "hover:text-white")}>Markets</button>
+              <button onClick={() => setCurrentView('signals')} className={cn("transition-colors", currentView === 'signals' ? "text-white" : "hover:text-white")}>Signals</button>
+              <button onClick={() => setCurrentView('history')} className={cn("transition-colors", currentView === 'history' ? "text-white" : "hover:text-white")}>History</button>
             </div>
           </div>
 
@@ -267,16 +503,19 @@ export default function Dashboard() {
               <Globe size={12} />
               {isConnected ? 'Live Feed Active' : 'Connecting...'}
             </div>
-            <button className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"
+            >
               <Settings size={18} />
             </button>
           </div>
         </nav>
 
-        <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <main id="dashboard" className={cn("grid grid-cols-1 gap-8", currentView === 'dashboard' ? "lg:grid-cols-12" : "")}>
           
           {/* Sidebar: Market Selection */}
-          <aside className="lg:col-span-3 space-y-6">
+          <aside id="markets" className={cn("space-y-6", currentView === 'dashboard' ? "lg:col-span-3" : currentView === 'markets' ? "max-w-2xl mx-auto w-full" : "hidden")}>
             <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 backdrop-blur-xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Markets</h2>
@@ -341,10 +580,10 @@ export default function Dashboard() {
           </aside>
 
           {/* Main Content: Chart & Analysis */}
-          <div className="lg:col-span-9 space-y-8">
+          <div className={cn("space-y-8", currentView === 'dashboard' ? "lg:col-span-9" : currentView === 'signals' ? "max-w-5xl mx-auto w-full" : currentView === 'history' ? "max-w-3xl mx-auto w-full" : "hidden")}>
             
             {/* Chart Section */}
-            <section className="bg-white/[0.02] border border-white/5 rounded-[40px] p-8 backdrop-blur-xl">
+            <section className={cn("bg-white/[0.02] border border-white/5 rounded-[40px] p-8 backdrop-blur-xl", currentView === 'history' ? "hidden" : "block")}>
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
@@ -485,10 +724,10 @@ export default function Dashboard() {
             </section>
 
             {/* Analysis Result Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className={cn("grid grid-cols-1 gap-8", currentView === 'dashboard' ? "xl:grid-cols-3" : "xl:grid-cols-1")}>
               
               {/* Main Signal Card */}
-              <div className="xl:col-span-2">
+              <div id="signals" className={cn(currentView === 'dashboard' ? "xl:col-span-2" : currentView === 'signals' ? "block" : "hidden")}>
                 <AnimatePresence mode="wait">
                   {analysis ? (
                     <motion.div
@@ -539,42 +778,18 @@ export default function Dashboard() {
                       </div>
 
                       <div className="p-8 space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <h4 className="flex items-center gap-2 text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                                <Info size={12} /> Reasoning
-                              </h4>
-                              <p className="text-neutral-400 leading-relaxed text-sm font-medium">{analysis.reasoning}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="flex items-center gap-2 text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                                <TrendingUp size={12} /> Trend
-                              </h4>
-                              <p className="text-white font-bold text-sm">{analysis.marketTrend}</p>
-                            </div>
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <h4 className="flex items-center gap-2 text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                              <Info size={12} /> Reasoning
+                            </h4>
+                            <p className="text-neutral-400 leading-relaxed text-sm font-medium">{renderWithTooltips(analysis.reasoning)}</p>
                           </div>
-
-                          <div className="bg-white/[0.03] rounded-3xl p-6 space-y-6 border border-white/5">
-                            <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Target Levels</h4>
-                            <div className="grid grid-cols-2 gap-6">
-                              <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-neutral-500 uppercase">Entry</p>
-                                <p className="text-xl font-mono font-black text-white">{analysis.recommendedEntryPrice || currentPrice}</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-neutral-500 uppercase">Take Profit</p>
-                                <p className="text-xl font-mono font-black text-emerald-400">{analysis.takeProfit || (currentPrice * (analysis.signal === 'BUY' ? 1.005 : 0.995)).toFixed(selectedMarket.type === 'CRYPTO' ? 2 : 5)}</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-neutral-500 uppercase">Stop Loss</p>
-                                <p className="text-xl font-mono font-black text-rose-400">{analysis.stopLoss || (currentPrice * (analysis.signal === 'BUY' ? 0.995 : 1.005)).toFixed(selectedMarket.type === 'CRYPTO' ? 2 : 5)}</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-neutral-500 uppercase">Duration</p>
-                                <p className="text-xl font-black text-white">{selectedTimeframe.id === 'CUSTOM' ? customTimeframe : selectedTimeframe.label}</p>
-                              </div>
-                            </div>
+                          <div className="space-y-2">
+                            <h4 className="flex items-center gap-2 text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                              <TrendingUp size={12} /> <TermTooltip content={TRADING_TERMS['trend']}><span className="border-b border-dashed border-neutral-500/50 cursor-help">Trend</span></TermTooltip>
+                            </h4>
+                            <p className="text-white font-bold text-sm">{renderWithTooltips(analysis.marketTrend)}</p>
                           </div>
                         </div>
                       </div>
@@ -594,40 +809,52 @@ export default function Dashboard() {
               </div>
 
               {/* History Sidebar */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-8 backdrop-blur-xl">
+              <div id="history" className={cn("bg-white/[0.02] border border-white/5 rounded-[40px] p-8 backdrop-blur-xl", currentView === 'dashboard' ? "block" : currentView === 'history' ? "block" : "hidden")}>
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Recent Signals</h3>
                   <History size={16} className="text-neutral-500" />
                 </div>
                 
                 <div className="space-y-4">
-                  {history.length > 0 ? history.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black",
-                          item.signal === 'BUY' ? "bg-emerald-500 text-black" : item.signal === 'SELL' ? "bg-rose-500 text-black" : "bg-neutral-500 text-black"
-                        )}>
-                          {item.signal[0]}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold">{item.market}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-[10px] text-neutral-500 font-medium">{item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                            <span className="text-[10px] text-neutral-600">•</span>
-                            <p className="text-[10px] text-emerald-500/70 font-black uppercase tracking-widest">{item.timeframe}</p>
+                  {history.length > 0 ? (
+                    <>
+                      {(currentView === 'dashboard' ? history.slice(0, 5) : history).map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black",
+                              item.signal === 'BUY' ? "bg-emerald-500 text-black" : item.signal === 'SELL' ? "bg-rose-500 text-black" : "bg-neutral-500 text-black"
+                            )}>
+                              {item.signal[0]}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold">{item.market}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-[10px] text-neutral-500 font-medium">{item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <span className="text-[10px] text-neutral-600">•</span>
+                                <p className="text-[10px] text-emerald-500/70 font-black uppercase tracking-widest">{item.timeframe}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-black text-white">{item.confidence}%</p>
+                            <p className={cn(
+                              "text-[8px] font-black uppercase tracking-widest",
+                              item.risk === 'LOW' ? "text-emerald-400" : "text-rose-400"
+                            )}>{item.risk}</p>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-black text-white">{item.confidence}%</p>
-                        <p className={cn(
-                          "text-[8px] font-black uppercase tracking-widest",
-                          item.risk === 'LOW' ? "text-emerald-400" : "text-rose-400"
-                        )}>{item.risk}</p>
-                      </div>
-                    </div>
-                  )) : (
+                      ))}
+                      {currentView === 'dashboard' && history.length > 5 && (
+                        <button 
+                          onClick={() => setCurrentView('history')}
+                          className="w-full py-4 mt-2 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+                        >
+                          View Full History <ArrowRight size={14} />
+                        </button>
+                      )}
+                    </>
+                  ) : (
                     <div className="py-12 text-center space-y-3">
                       <Clock size={24} className="mx-auto text-neutral-800" />
                       <p className="text-[10px] font-black text-neutral-700 uppercase tracking-widest">No history yet</p>
@@ -641,20 +868,9 @@ export default function Dashboard() {
         </main>
 
         {/* Footer */}
-        <footer className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-neutral-600 text-[10px] font-black uppercase tracking-[0.2em]">
+        <footer className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-center gap-6 text-neutral-600 text-[10px] font-black uppercase tracking-[0.2em]">
           <div className="flex items-center gap-4">
             <p>© 2026 PocketSignal AI Core</p>
-            <span className="text-neutral-800">•</span>
-            <div className="flex items-center gap-2">
-              <Lock size={12} />
-              <span>End-to-End Encrypted</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-8">
-            <a href="#" className="hover:text-white transition-colors">Documentation</a>
-            <a href="#" className="hover:text-white transition-colors">API Status</a>
-            <a href="#" className="hover:text-white transition-colors">Support</a>
           </div>
         </footer>
 

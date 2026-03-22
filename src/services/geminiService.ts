@@ -8,17 +8,15 @@ export interface SignalAnalysis {
   risk: "LOW" | "MEDIUM" | "HIGH";
   reasoning: string;
   marketTrend: string;
-  recommendedEntryPrice?: number;
-  stopLoss?: number;
-  takeProfit?: number;
 }
 
 export async function analyzeMarketSignal(marketName: string, data: string, timeframe: string): Promise<SignalAnalysis> {
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Analyze the following market data for ${marketName} on a ${timeframe} timeframe. 
-    Provide a clear signal (BUY/SELL/NEUTRAL), a confidence score (0-100%), a risk level (LOW/MEDIUM/HIGH), and a brief reasoning.
-    Also include the current market trend and suggested entry/exit points if possible.
+    Provide a clear signal (BUY/SELL/NEUTRAL) based on the current market price.
+    Provide a confidence score (0-100%), a risk level (LOW/MEDIUM/HIGH), and a brief reasoning.
+    Also include the current market trend.
     
     Data: ${data}`,
     config: {
@@ -31,9 +29,6 @@ export async function analyzeMarketSignal(marketName: string, data: string, time
           risk: { type: Type.STRING, enum: ["LOW", "MEDIUM", "HIGH"] },
           reasoning: { type: Type.STRING },
           marketTrend: { type: Type.STRING },
-          recommendedEntryPrice: { type: Type.NUMBER },
-          stopLoss: { type: Type.NUMBER },
-          takeProfit: { type: Type.NUMBER },
         },
         required: ["signal", "confidence", "risk", "reasoning", "marketTrend"],
       },
