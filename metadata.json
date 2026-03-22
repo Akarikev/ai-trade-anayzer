@@ -1,0 +1,5 @@
+{
+  "name": "PocketSignal AI",
+  "description": "A minimalist AI-powered trading signal analyzer for PocketOption and OTC markets. Get real-time trend analysis, risk assessment, and buy/sell signals.",
+  "requestFramePermissions": []
+}
