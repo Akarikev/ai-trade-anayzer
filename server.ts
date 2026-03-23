@@ -20,7 +20,6 @@ async function startServer() {
     message: { error: "Too many analysis requests. Please try again in a minute." },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => req.ip || 'unknown',
   });
 
   app.post("/api/analyze", analyzeLimiter, async (req, res) => {
