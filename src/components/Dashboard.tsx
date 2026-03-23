@@ -21,7 +21,9 @@ import {
   AlertTriangle,
   X,
   ArrowRight,
-  Timer
+  Timer,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { 
   XAxis, 
@@ -108,7 +110,7 @@ const TermTooltip: React.FC<{ children: React.ReactNode, content: string }> = ({
   return (
     <span className="relative group/tooltip inline-block">
       {children}
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-[#1A1A1A] text-white text-[11px] leading-relaxed rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 pointer-events-none shadow-2xl border border-white/10 text-center font-medium normal-case tracking-normal block">
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-white dark:bg-[#1A1A1A] text-black dark:text-white text-[11px] leading-relaxed rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 pointer-events-none shadow-2xl border border-black/10 dark:border-white/10 text-center font-medium normal-case tracking-normal block">
         {content}
         <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-[#1A1A1A] block" />
       </span>
@@ -157,6 +159,16 @@ export default function Dashboard() {
   const [isConnected, setIsConnected] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Handle Dark Mode
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
   const [currentView, setCurrentView] = useState<'dashboard' | 'markets' | 'signals' | 'history'>('dashboard');
   const [history, setHistory] = useState<(SignalAnalysis & { timestamp: Date, market: string, timeframe: string })[]>(() => {
     const saved = localStorage.getItem('pocketSignalHistory');
@@ -399,7 +411,7 @@ export default function Dashboard() {
   const priceChangePercent = ((priceChange / startPrice) * 100).toFixed(2);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#0A0A0A] text-neutral-900 dark:text-[#E5E5E5] font-sans selection:bg-emerald-500/30">
       {/* Disclaimer Modal */}
       <AnimatePresence>
         {showDisclaimer && (
@@ -408,27 +420,27 @@ export default function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-white dark:bg-black/80 backdrop-blur-sm"
           >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#111] border border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
+              className="bg-white dark:bg-[#111] border border-black/10 dark:border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-rose-500" />
               <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 mb-6">
                 <AlertTriangle size={32} />
               </div>
-              <h2 className="text-2xl font-black tracking-tighter mb-4 text-white">Important Disclaimer</h2>
-              <p className="text-neutral-400 text-sm leading-relaxed mb-8 font-medium">
-                The signals and analysis provided by PocketSignal AI Core are <strong className="text-white">predictions based on historical data and AI models</strong>. They are not guaranteed to be accurate and do not constitute financial advice. 
+              <h2 className="text-2xl font-black tracking-tighter mb-4 text-black dark:text-white">Important Disclaimer</h2>
+              <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed mb-8 font-medium">
+                The signals and analysis provided by PocketSignal AI Core are <strong className="text-black dark:text-white">predictions based on historical data and AI models</strong>. They are not guaranteed to be accurate and do not constitute financial advice. 
                 <br/><br/>
                 Always conduct your own analysis or consult a certified trading expert before making any financial decisions. Trading involves significant risk of loss.
               </p>
               <button 
                 onClick={() => setShowDisclaimer(false)}
-                className="w-full py-4 bg-white text-black rounded-xl font-black uppercase tracking-widest text-xs hover:bg-neutral-200 transition-colors active:scale-95"
+                className="w-full py-4 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-xl font-black uppercase tracking-widest text-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors active:scale-95"
               >
                 I Understand & Agree
               </button>
@@ -445,24 +457,24 @@ export default function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-white dark:bg-black/80 backdrop-blur-sm"
           >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#111] border border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
+              className="bg-white dark:bg-[#111] border border-black/10 dark:border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-black/5 dark:bg-white/5 rounded-xl flex items-center justify-center text-black dark:text-white">
                     <Settings size={20} />
                   </div>
-                  <h2 className="text-2xl font-black tracking-tighter text-white">Settings</h2>
+                  <h2 className="text-2xl font-black tracking-tighter text-black dark:text-white">Settings</h2>
                 </div>
                 <button 
                   onClick={() => setShowSettings(false)} 
-                  className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors text-neutral-400 hover:text-white"
+                  className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:bg-black/10 dark:bg-white/10 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-black dark:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -473,7 +485,7 @@ export default function Dashboard() {
                 <div className="space-y-3">
                   <h3 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Default Timeframe</h3>
                   <select
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white font-bold focus:outline-none focus:border-emerald-500/50 appearance-none cursor-pointer"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl py-3 px-4 text-sm text-black dark:text-white font-bold focus:outline-none focus:border-emerald-500/50 appearance-none cursor-pointer"
                     value={selectedTimeframe.id}
                     onChange={(e) => {
                       const tf = TIMEFRAMES.find(t => t.id === e.target.value);
@@ -481,7 +493,7 @@ export default function Dashboard() {
                     }}
                   >
                     {TIMEFRAMES.map(tf => (
-                      <option key={tf.id} value={tf.id} className="bg-[#111] text-white">
+                      <option key={tf.id} value={tf.id} className="bg-white dark:bg-[#111] text-black dark:text-white">
                         {tf.label} - {tf.value}
                       </option>
                     ))}
@@ -521,11 +533,11 @@ export default function Dashboard() {
       <div className="relative z-10 max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
         {/* Navigation / Header */}
-        <nav className="flex items-center justify-between border-b border-white/5 pb-6">
+        <nav className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-6">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <Zap size={22} className="text-black" fill="currentColor" />
+                <Zap size={22} className="text-white dark:text-black" fill="currentColor" />
               </div>
               <div>
                 <h1 className="text-xl font-black tracking-tighter uppercase italic">PocketSignal</h1>
@@ -537,10 +549,10 @@ export default function Dashboard() {
             </div>
 
             <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-neutral-500">
-              <button onClick={() => setCurrentView('dashboard')} className={cn("transition-colors", currentView === 'dashboard' ? "text-white" : "hover:text-white")}>Dashboard</button>
-              <button onClick={() => setCurrentView('markets')} className={cn("transition-colors", currentView === 'markets' ? "text-white" : "hover:text-white")}>Markets</button>
-              <button onClick={() => setCurrentView('signals')} className={cn("transition-colors", currentView === 'signals' ? "text-white" : "hover:text-white")}>Signals</button>
-              <button onClick={() => setCurrentView('history')} className={cn("transition-colors", currentView === 'history' ? "text-white" : "hover:text-white")}>History</button>
+              <button onClick={() => setCurrentView('dashboard')} className={cn("transition-colors", currentView === 'dashboard' ? "text-black dark:text-white" : "hover:text-black dark:text-white")}>Dashboard</button>
+              <button onClick={() => setCurrentView('markets')} className={cn("transition-colors", currentView === 'markets' ? "text-black dark:text-white" : "hover:text-black dark:text-white")}>Markets</button>
+              <button onClick={() => setCurrentView('signals')} className={cn("transition-colors", currentView === 'signals' ? "text-black dark:text-white" : "hover:text-black dark:text-white")}>Signals</button>
+              <button onClick={() => setCurrentView('history')} className={cn("transition-colors", currentView === 'history' ? "text-black dark:text-white" : "hover:text-black dark:text-white")}>History</button>
             </div>
           </div>
 
@@ -553,8 +565,15 @@ export default function Dashboard() {
               {isConnected ? 'Live Feed Active' : 'Connecting...'}
             </div>
             <button 
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/10 dark:bg-white/10 transition-all"
+              title="Toggle Dark Mode"
+            >
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button 
               onClick={() => setShowSettings(true)}
-              className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"
+              className="p-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/10 dark:bg-white/10 transition-all"
             >
               <Settings size={18} />
             </button>
@@ -565,7 +584,7 @@ export default function Dashboard() {
           
           {/* Sidebar: Market Selection */}
           <aside id="markets" className={cn("space-y-6", currentView === 'dashboard' ? "lg:col-span-3" : currentView === 'markets' ? "max-w-2xl mx-auto w-full" : "hidden")}>
-            <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 backdrop-blur-xl">
+            <div className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-3xl p-6 backdrop-blur-xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Markets</h2>
                 <div className="relative group/search">
@@ -574,7 +593,7 @@ export default function Dashboard() {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500/50 transition-all w-32 group-hover/search:w-48"
+                    className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500/50 transition-all w-32 group-hover/search:w-48"
                   />
                   <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500" />
                 </div>
@@ -591,14 +610,14 @@ export default function Dashboard() {
                     className={cn(
                       "w-full group flex items-center justify-between p-4 rounded-2xl transition-all border",
                       selectedMarket.id === market.id 
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-white" 
-                        : "bg-transparent border-transparent hover:bg-white/5 text-neutral-500"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-black dark:text-white" 
+                        : "bg-transparent border-transparent hover:bg-black/5 dark:bg-white/5 text-neutral-500"
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold",
-                        selectedMarket.id === market.id ? "bg-emerald-500 text-black" : "bg-white/5 text-neutral-400"
+                        selectedMarket.id === market.id ? "bg-emerald-500 text-white dark:text-black" : "bg-black/5 dark:bg-white/5 text-neutral-600 dark:text-neutral-400"
                       )}>
                         {market.id.substring(0, 2)}
                       </div>
@@ -618,13 +637,13 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Stats Card */}
-            <div className="bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-white/10 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden group">
+            <div className="bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-black/10 dark:border-white/10 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                 <ShieldCheck size={80} />
               </div>
               <h3 className="text-sm font-bold mb-2">AI Confidence</h3>
               <p className="text-2xl font-black mb-4">{analysis ? `${analysis.confidence}%` : '--%'}</p>
-              <p className="text-xs text-neutral-400 font-medium leading-relaxed">Signal accuracy varies by market conditions. Always trade responsibly.</p>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium leading-relaxed">Signal accuracy varies by market conditions. Always trade responsibly.</p>
             </div>
           </aside>
 
@@ -632,7 +651,7 @@ export default function Dashboard() {
           <div className={cn("space-y-8", currentView === 'dashboard' ? "lg:col-span-9" : currentView === 'signals' ? "max-w-5xl mx-auto w-full" : currentView === 'history' ? "max-w-3xl mx-auto w-full" : "hidden")}>
             
             {/* Chart Section */}
-            <section className={cn("bg-white/[0.02] border border-white/5 rounded-[40px] p-8 backdrop-blur-xl", currentView === 'history' ? "hidden" : "block")}>
+            <section className={cn("bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-[40px] p-8 backdrop-blur-xl", currentView === 'history' ? "hidden" : "block")}>
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
@@ -721,8 +740,8 @@ export default function Dashboard() {
                         className={cn(
                           "px-3 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all border",
                           selectedTimeframe.id === tf.id 
-                            ? "bg-white text-black border-white" 
-                            : "bg-white/5 text-neutral-500 border-white/5 hover:bg-white/10"
+                            ? "bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white" 
+                            : "bg-black/5 dark:bg-white/5 text-neutral-500 border-black/5 dark:border-white/5 hover:bg-black/10 dark:bg-white/10"
                         )}
                       >
                         {tf.label}
@@ -741,7 +760,7 @@ export default function Dashboard() {
                         placeholder="e.g. 10 minutes"
                         value={customTimeframe}
                         onChange={(e) => setCustomTimeframe(e.target.value)}
-                        className="bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-xs focus:outline-none focus:border-emerald-500/50 w-full md:w-48"
+                        className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl py-2 px-4 text-xs focus:outline-none focus:border-emerald-500/50 w-full md:w-48"
                       />
                     </motion.div>
                   )}
@@ -755,7 +774,7 @@ export default function Dashboard() {
                       "w-full md:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center justify-center gap-3",
                       (isAnalyzing || (selectedTimeframe.id === 'CUSTOM' && !customTimeframe) || cooldown > 0)
                         ? "bg-neutral-800 text-neutral-500 cursor-not-allowed" 
-                        : "bg-emerald-500 text-black hover:bg-emerald-400 active:scale-95"
+                        : "bg-emerald-500 text-white dark:text-black hover:bg-emerald-400 active:scale-95"
                     )}
                   >
                     {isAnalyzing ? (
@@ -792,15 +811,15 @@ export default function Dashboard() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.98 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="bg-white/[0.02] border border-white/5 rounded-[40px] overflow-hidden backdrop-blur-xl h-full"
+                      className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-[40px] overflow-hidden backdrop-blur-xl h-full"
                     >
                       <div className={cn(
-                        "p-8 flex items-center justify-between border-b border-white/5",
+                        "p-8 flex items-center justify-between border-b border-black/5 dark:border-white/5",
                         analysis.signal === 'BUY' ? "bg-emerald-500/5" : analysis.signal === 'SELL' ? "bg-rose-500/5" : "bg-neutral-500/5"
                       )}>
                         <div className="flex items-center gap-6">
                           <div className={cn(
-                            "w-16 h-16 rounded-3xl flex items-center justify-center text-black shadow-2xl",
+                            "w-16 h-16 rounded-3xl flex items-center justify-center text-white dark:text-black shadow-2xl",
                             analysis.signal === 'BUY' ? "bg-emerald-500" : analysis.signal === 'SELL' ? "bg-rose-500" : "bg-neutral-500"
                           )}>
                             {analysis.signal === 'BUY' ? <TrendingUp size={32} /> : analysis.signal === 'SELL' ? <TrendingDown size={32} /> : <Activity size={32} />}
@@ -809,7 +828,7 @@ export default function Dashboard() {
                             <h3 className="text-4xl font-black tracking-tighter uppercase italic">{analysis.signal}</h3>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Confidence</span>
-                              <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="w-24 h-1.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${analysis.confidence}%` }}
@@ -819,7 +838,7 @@ export default function Dashboard() {
                                   )}
                                 />
                               </div>
-                              <span className="text-xs font-bold text-white">{analysis.confidence}%</span>
+                              <span className="text-xs font-bold text-black dark:text-white">{analysis.confidence}%</span>
                             </div>
                           </div>
                         </div>
@@ -842,24 +861,24 @@ export default function Dashboard() {
                             <h4 className="flex items-center gap-2 text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
                               <Info size={12} /> Reasoning
                             </h4>
-                            <p className="text-neutral-400 leading-relaxed text-sm font-medium">{renderWithTooltips(analysis.reasoning)}</p>
+                            <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed text-sm font-medium">{renderWithTooltips(analysis.reasoning)}</p>
                           </div>
                           <div className="space-y-2">
                             <h4 className="flex items-center gap-2 text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">
                               <TrendingUp size={12} /> <TermTooltip content={TRADING_TERMS['trend']}><span className="border-b border-dashed border-neutral-500/50 cursor-help">Trend</span></TermTooltip>
                             </h4>
-                            <p className="text-white font-bold text-sm">{renderWithTooltips(analysis.marketTrend)}</p>
+                            <p className="text-black dark:text-white font-bold text-sm">{renderWithTooltips(analysis.marketTrend)}</p>
                           </div>
                         </div>
                       </div>
                     </motion.div>
                   ) : (
-                    <div className="bg-white/[0.01] border border-dashed border-white/10 rounded-[40px] p-16 flex flex-col items-center justify-center text-center space-y-6 h-full">
-                      <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center text-neutral-700">
+                    <div className="bg-white/[0.01] border border-dashed border-black/10 dark:border-white/10 rounded-[40px] p-16 flex flex-col items-center justify-center text-center space-y-6 h-full">
+                      <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center text-neutral-700">
                         <BarChart3 size={40} />
                       </div>
                       <div className="space-y-2">
-                        <h3 className="text-xl font-bold text-neutral-400 uppercase tracking-widest">Awaiting Analysis</h3>
+                        <h3 className="text-xl font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">Awaiting Analysis</h3>
                         <p className="text-sm text-neutral-600 max-w-xs font-medium">Our AI is ready to scan the markets. Select a pair and trigger the analysis core.</p>
                       </div>
                     </div>
@@ -868,7 +887,7 @@ export default function Dashboard() {
               </div>
 
               {/* History Sidebar */}
-              <div id="history" className={cn("bg-white/[0.02] border border-white/5 rounded-[40px] p-8 backdrop-blur-xl", currentView === 'dashboard' ? "block" : currentView === 'history' ? "block" : "hidden")}>
+              <div id="history" className={cn("bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-[40px] p-8 backdrop-blur-xl", currentView === 'dashboard' ? "block" : currentView === 'history' ? "block" : "hidden")}>
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xs font-black text-neutral-500 uppercase tracking-[0.2em]">Recent Signals</h3>
                   <History size={16} className="text-neutral-500" />
@@ -878,11 +897,11 @@ export default function Dashboard() {
                   {history.length > 0 ? (
                     <>
                       {(currentView === 'dashboard' ? history.slice(0, 5) : history).map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
+                        <div key={idx} className="flex items-center justify-between p-4 bg-white/[0.03] border border-black/5 dark:border-white/5 rounded-2xl">
                           <div className="flex items-center gap-3">
                             <div className={cn(
                               "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black",
-                              item.signal === 'BUY' ? "bg-emerald-500 text-black" : item.signal === 'SELL' ? "bg-rose-500 text-black" : "bg-neutral-500 text-black"
+                              item.signal === 'BUY' ? "bg-emerald-500 text-white dark:text-black" : item.signal === 'SELL' ? "bg-rose-500 text-white dark:text-black" : "bg-neutral-500 text-white dark:text-black"
                             )}>
                               {item.signal[0]}
                             </div>
@@ -896,7 +915,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-black text-white">{item.confidence}%</p>
+                            <p className="text-xs font-black text-black dark:text-white">{item.confidence}%</p>
                             <p className={cn(
                               "text-[8px] font-black uppercase tracking-widest",
                               item.risk === 'LOW' ? "text-emerald-400" : "text-rose-400"
@@ -907,7 +926,7 @@ export default function Dashboard() {
                       {currentView === 'dashboard' && history.length > 5 && (
                         <button 
                           onClick={() => setCurrentView('history')}
-                          className="w-full py-4 mt-2 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+                          className="w-full py-4 mt-2 rounded-2xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-[10px] font-black text-neutral-600 dark:text-neutral-400 uppercase tracking-[0.2em] flex items-center justify-center gap-2"
                         >
                           View Full History <ArrowRight size={14} />
                         </button>
@@ -927,7 +946,7 @@ export default function Dashboard() {
         </main>
 
         {/* Footer */}
-        <footer className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-center gap-6 text-neutral-600 text-[10px] font-black uppercase tracking-[0.2em]">
+        <footer className="pt-12 border-t border-black/5 dark:border-white/5 flex flex-col md:flex-row items-center justify-center gap-6 text-neutral-600 text-[10px] font-black uppercase tracking-[0.2em]">
           <div className="flex items-center gap-4">
             <p>© 2026 PocketSignal AI Core</p>
           </div>
