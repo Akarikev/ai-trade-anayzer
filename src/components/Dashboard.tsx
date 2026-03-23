@@ -20,7 +20,8 @@ import {
   Info,
   AlertTriangle,
   X,
-  ArrowRight
+  ArrowRight,
+  Timer
 } from 'lucide-react';
 import { 
   XAxis, 
@@ -34,7 +35,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { analyzeMarketSignal, type SignalAnalysis } from '../services/geminiService';
+import { analyzeMarketSignal, type SignalAnalysis } from '../services/claudeService';
 
 // Utility for tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -143,7 +144,16 @@ export default function Dashboard() {
   const [customTimeframe, setCustomTimeframe] = useState('');
   const [marketData, setMarketData] = useState<MarketDataPoint[]>([]);
   const [analysis, setAnalysis] = useState<SignalAnalysis | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
   const [isConnected, setIsConnected] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -256,9 +266,13 @@ export default function Dashboard() {
         if (ws.current) {
           ws.current.onopen = null;
           ws.current.onclose = null;
-          ws.current.onerror = null;
+          ws.current.onerror = () => {}; // Prevent unhandled errors during close
           ws.current.onmessage = null;
-          ws.current.close();
+          try {
+            ws.current.close();
+          } catch (e) {
+            // Ignore close errors
+          }
           ws.current = null;
         }
         startSimulation();
@@ -329,9 +343,15 @@ export default function Dashboard() {
       if (ws.current) {
         ws.current.onopen = null;
         ws.current.onclose = null;
-        ws.current.onerror = null;
+        ws.current.onerror = () => {}; // Prevent unhandled errors during close
         ws.current.onmessage = null;
-        ws.current.close();
+        try {
+          if (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING) {
+            ws.current.close();
+          }
+        } catch (e) {
+          // Ignore close errors
+        }
         ws.current = null;
       }
       if (intervalId) {
@@ -343,14 +363,31 @@ export default function Dashboard() {
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
+    setAnalysisError(null);
     try {
-      const dataString = marketData.map(d => `${d.time}: ${d.price}`).join(', ');
+      const prices = marketData.map(d => d.price);
+      const recent = prices.slice(-10);
+      const avg = recent.length > 0 ? recent.reduce((a, b) => a + b, 0) / recent.length : 0;
+      const momentum = prices.length >= 10 ? prices[prices.length - 1] - prices[prices.length - 10] : 0;
+      const high = prices.length > 0 ? Math.max(...prices) : 0;
+      const low = prices.length > 0 ? Math.min(...prices) : 0;
+
+      const dataString = `
+        Price series (last 30 ticks): ${prices.slice(-30).join(', ')}
+        Current price: ${currentPrice}
+        10-tick average: ${avg.toFixed(5)}
+        Momentum (last 10 ticks): ${momentum.toFixed(5)}
+        Session high: ${high}, Session low: ${low}
+        Market: ${selectedMarket.name}, Type: ${selectedMarket.type}
+      `;
       const timeframeValue = selectedTimeframe.id === 'CUSTOM' ? customTimeframe : selectedTimeframe.value;
       const result = await analyzeMarketSignal(selectedMarket.name, dataString, timeframeValue);
       setAnalysis(result);
       setHistory(prev => [{ ...result, timestamp: new Date(), market: selectedMarket.name, timeframe: timeframeValue }, ...prev].slice(0, 10));
-    } catch (error) {
+      setCooldown(15); // 15 seconds cooldown
+    } catch (error: any) {
       console.error("Analysis failed:", error);
+      setAnalysisError(error.message || "Analysis failed. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -585,9 +622,9 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                 <ShieldCheck size={80} />
               </div>
-              <h3 className="text-sm font-bold mb-2">AI Precision</h3>
-              <p className="text-2xl font-black mb-4">94.2%</p>
-              <p className="text-xs text-neutral-400 font-medium leading-relaxed">Our neural network analyzes over 50 indicators per second to provide high-accuracy signals.</p>
+              <h3 className="text-sm font-bold mb-2">AI Confidence</h3>
+              <p className="text-2xl font-black mb-4">{analysis ? `${analysis.confidence}%` : '--%'}</p>
+              <p className="text-xs text-neutral-400 font-medium leading-relaxed">Signal accuracy varies by market conditions. Always trade responsibly.</p>
             </div>
           </aside>
 
@@ -710,28 +747,38 @@ export default function Dashboard() {
                   )}
                 </div>
                 
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || (selectedTimeframe.id === 'CUSTOM' && !customTimeframe)}
-                  className={cn(
-                    "w-full md:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center justify-center gap-3",
-                    (isAnalyzing || (selectedTimeframe.id === 'CUSTOM' && !customTimeframe))
-                      ? "bg-neutral-800 text-neutral-500 cursor-not-allowed" 
-                      : "bg-emerald-500 text-black hover:bg-emerald-400 active:scale-95"
+                <div className="flex flex-col w-full md:w-auto">
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing || (selectedTimeframe.id === 'CUSTOM' && !customTimeframe) || cooldown > 0}
+                    className={cn(
+                      "w-full md:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center justify-center gap-3",
+                      (isAnalyzing || (selectedTimeframe.id === 'CUSTOM' && !customTimeframe) || cooldown > 0)
+                        ? "bg-neutral-800 text-neutral-500 cursor-not-allowed" 
+                        : "bg-emerald-500 text-black hover:bg-emerald-400 active:scale-95"
+                    )}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" />
+                        Processing...
+                      </>
+                    ) : cooldown > 0 ? (
+                      <>
+                        <Timer size={18} />
+                        Wait {cooldown}s
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={18} fill="currentColor" />
+                        Analyze Signal
+                      </>
+                    )}
+                  </button>
+                  {analysisError && (
+                    <p className="text-rose-500 text-xs font-bold mt-2 text-center">{analysisError}</p>
                   )}
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <RefreshCw size={18} className="animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap size={18} fill="currentColor" />
-                      Analyze Signal
-                    </>
-                  )}
-                </button>
+                </div>
               </div>
             </section>
 
